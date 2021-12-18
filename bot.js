@@ -1,24 +1,27 @@
-require('dotenv').config();
+const { Client, Intents } = require('discord.js');
+const { token } = require('./config.json');
 
-const Discord = require('discord.js');
-const client = new Discord.Client({
-  intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS'],
+const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
+
+client.once('ready', () => {
+  console.log('Ready!');
 });
 
-client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-});
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isCommand()) return;
+  const member = interaction.member;
 
-client.on('message', (msg) => {
-  let guild;
-  if (msg.content === 'ping') {
-    msg.reply('pong').catch((res) => {
-      console.log(res);
-    });
+  const { commandName } = interaction;
 
-    client.guilds(msg.guild.id).then((res) => (guild = res));
-    console.log(guild.name);
+  if (
+    commandName === 'register' &&
+    // snowflake id is for the test servers tester role
+    member.roles.cache.has('921594568581984256')
+  ) {
+    await interaction.reply('please enter your ethereum address');
+  } else if (commandName === 'beep') {
+    await interaction.reply('Boop!');
   }
 });
 
-client.login(process.env.TOKEN);
+client.login(token);

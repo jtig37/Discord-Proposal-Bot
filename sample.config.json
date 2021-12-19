@@ -1,5 +1,7 @@
 {
-    "token": ,
-    "clientId": ,
-    "guildId":
+    "token": "token_snowflake",
+    "clientId": "clientId_snowflake",
+    "guildId": "guild_snowflake",
+    "userId": "userId_snowflake",
+    "channelId": "channelId_snowflake"
 }

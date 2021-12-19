@@ -1,8 +1,14 @@
 const { Client, Intents } = require('discord.js');
-const { token, channelId, permissionedRoleId } = require('./config.json');
+const { token, channelId, permissionedRolesId } = require('./config.json');
 
-const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
+const client = new Client({
+  intents: [
+    Intents.FLAGS.GUILDS,
+    Intents.FLAGS.GUILD_MESSAGES,
+    Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+  ],
+});
 
-const Dao = new DaoApp(token, client, channelId, permissionedRoleId);
+const Dao = new DaoApp(token, client, channelId, permissionedRolesId);
 
 Dao.start();

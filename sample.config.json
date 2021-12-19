@@ -3,5 +3,6 @@
     "clientId": "clientId_snowflake",
     "guildId": "guild_snowflake",
     "userId": "userId_snowflake",
-    "channelId": "channelId_snowflake"
+    "channelId": "channelId_snowflake",
+    "dbName": "dbName"
 }

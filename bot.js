@@ -1,5 +1,5 @@
 const Keyv = require('keyv');
-const { dbName } = require('./config.json');
+const { database, permissionedRolesId } = require('./config.json');
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 
 class DaoApp {
@@ -10,25 +10,27 @@ class DaoApp {
    * @param {snowflakes of channels; string[]} channel
    * @param {snowflakes of permissioned roles for bot interactions; string[]} permissionedRoles
    */
-  constructor(token, client, channel, permissionedRoles) {
+  constructor(token, client, channel) {
     this.token = token;
     this.client = client;
     this.channel = channel;
-    this.permissionedRoles = permissionedRoles;
-    this.db = new Keyv(`sqlite://../database/${databaseName}.sqlite`);
+    this.db = new Keyv(`sqlite://${__dirname}/database/${database}.sqlite`);
+    this.db.on('connection', () => {
+      console.log('connected to database');
+    });
+    this.db.on('error', (err) => {
+      console.error(err);
+    });
   }
 
   /**
    * @dev Requires discord user to have the permissioned role, else fails bot interaction
-   * @param {discord interaction object} interaction
-   * @param {snowflake of discord permissioned | string} role
+   * @param {discord members roles for guild | string[]} membersRoles
+   * @param {snowflake of discord permissioned | string[]} roles
    * @returns {boolean}
    */
-  async interactionRoleFilter(interaction, role = this.permissionedRoles[0]) {
-    const member = interaction.member;
-    const roles = member.roles.cache;
-
-    return roles.has(role);
+  async interactionRoleChecker(membersRoles, roles = permissionedRolesId) {
+    return membersRoles.some((role) => roles.includes(role));
   }
 
   // TODO: Test UX and Admin UX if reaction emojis or buttons for best voting experience
@@ -47,17 +49,36 @@ class DaoApp {
    * @param {discord interaction object} interaction
    */
   async interactionHandler(interaction) {
-    if (!interaction.isCommand()) return;
     const member = interaction.member;
-
-    const { commandName } = interaction;
+    const membersRoles = member.roles.cache.map((role) => role.id);
+    const { commandName, options } = interaction;
 
     if (
       commandName === 'register' &&
       // snowflake id is for the test servers tester role
-      member.roles.cache.has('921594568581984256')
+      (await this.interactionRoleChecker(membersRoles))
     ) {
-      await interaction.reply('please enter your ethereum address');
+      // Checks if the user has already registered
+      const address = await this.db.get(member.user.id);
+      console.log({ address });
+      if (address) {
+        return await interaction.reply({
+          content: `You're already registered! Here's your address: ${address}`,
+          ephemeral: true,
+        });
+      } else {
+        if (await this.db.set(`${member.user.id}`, options.address)) {
+          return await interaction.reply({
+            content: "You've been registered!",
+            ephemeral: true,
+          });
+        } else {
+          return await interaction.reply({
+            content: 'Something went wrong!',
+            ephemeral: true,
+          });
+        }
+      }
     } else if (commandName === 'beep') {
       await interaction.reply('Boop!');
     }
@@ -71,23 +92,21 @@ class DaoApp {
 
       this.client.on('interactionCreate', async (interaction) => {
         if (!interaction.isCommand()) return;
-        const member = interaction.member;
 
-        const { commandName } = interaction;
-
-        if (
-          commandName === 'register' &&
-          // snowflake id is for the test servers tester role
-          member.roles.cache.has('921594568581984256')
-        ) {
-          await interaction.reply('please enter your ethereum address');
-        } else if (commandName === 'beep') {
-          await interaction.reply('Boop!');
-        }
+        await this.interactionHandler(interaction);
+        // if (
+        //   commandName === 'register' &&
+        //   // snowflake id is for the test servers tester role
+        //   member.roles.cache.has('921594568581984256')
+        // ) {
+        //   await interaction.reply('please enter your ethereum address');
+        // } else if (commandName === 'beep') {
+        //   await interaction.reply('Boop!');
+        // }
       });
 
       // starts the application client
-      await client.login(this.token);
+      await this.client.login(this.token);
     } catch (e) {
       console.error(e);
     }

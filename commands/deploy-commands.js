@@ -6,7 +6,13 @@ const { clientId, guildId, token } = require('../config.json');
 const commands = [
   new SlashCommandBuilder()
     .setName('register')
-    .setDescription('registers ethereum address'),
+    .setDescription('registers ethereum address')
+    .addStringOption((option) =>
+      option
+        .setName('address')
+        .setDescription('Ethereum address starting in 0x...')
+        .setRequired(true)
+    ),
   new SlashCommandBuilder()
     .setName('proposal')
     .setDescription('creates a voting event'),

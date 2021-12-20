@@ -1,4 +1,5 @@
 const { Client, Intents } = require('discord.js');
+const DaoApp = require('./bot.js');
 const { token, channelId, permissionedRolesId } = require('./config.json');
 
 const client = new Client({

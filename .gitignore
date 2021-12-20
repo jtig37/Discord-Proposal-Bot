@@ -101,7 +101,7 @@ dist
 .fusebox/
 
 # sqlite3 Local files
-.database/
+./database/**/*
 
 # TernJS port file
 .tern-port

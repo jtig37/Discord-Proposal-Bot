@@ -15,9 +15,7 @@ class DaoApp {
     this.client = client;
     this.channel = channel;
     this.db = new Keyv(`sqlite://${__dirname}/database/${database}.sqlite`);
-    this.db.on('connection', () => {
-      console.log('connected to database');
-    });
+
     this.db.on('error', (err) => {
       console.error(err);
     });
@@ -58,16 +56,38 @@ class DaoApp {
       // snowflake id is for the test servers tester role
       (await this.interactionRoleChecker(membersRoles))
     ) {
-      // Checks if the user has already registered
+      // Checks if address has already been registered
+      const user = await this.db.get(options.getString('address'));
+
+      if (user === undefined) {
+        console.log({ user });
+        return interaction.reply('This address has already been registered');
+      }
+
       const address = await this.db.get(member.user.id);
-      console.log({ address });
+
       if (address) {
         return await interaction.reply({
-          content: `You're already registered! Here's your address: ${address}`,
+          content: `This address has already been registeed: ${address}`,
           ephemeral: true,
         });
       } else {
-        if (await this.db.set(`${member.user.id}`, options.address)) {
+        // console.log({
+        //   id: member.user.id,
+        //   address: options.getString('address'),
+        // });
+
+        // TODO: Need to come up with another solution to this, as it is not ideal
+        const registeredUserToAddress = await this.db.set(
+          member.user.id,
+          options.getString('address')
+        );
+        const registerAddressToUser = await this.db.set(
+          options.getString('address'),
+          member.user.id
+        );
+
+        if (registeredUserToAddress && registerAddressToUser) {
           return await interaction.reply({
             content: "You've been registered!",
             ephemeral: true,

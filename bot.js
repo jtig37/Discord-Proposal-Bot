@@ -1,6 +1,12 @@
 const Keyv = require('keyv');
 const { database, permissionedRolesId } = require('./config.json');
-const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
+const {
+  MessageEmbed,
+  MessageActionRow,
+  MessageButton,
+  MessageAttachment,
+} = require('discord.js');
+const GrayBoy = new MessageAttachment('./assets/GrayBoy.jpg');
 
 class DaoApp {
   /**
@@ -35,12 +41,40 @@ class DaoApp {
   /**
    * @dev Creates embedded message for dao proposals
    * @param {dao proposal title | string} title
+   * @param {dao proposal url | string} url (optional)
    * @param {proposal description | string} description
-   * @param {snowflakes of reactions for voting| string[]} reactions
-   * @param {TODO: admin image upload for individual proposals} image
+   * @param {reactions for voting options| string[]} reactionIds
+   * @param {TODO: admin image upload for individual proposals} image (optional)
    * @returns {typeOf MessageEmbed}
    */
-  createEmbed(title, description, reactions, image) {}
+  createEmbed(title, url, description, reactionIds, image) {
+    const options = (reactionIds) => {
+      const fields = [];
+      let ticker = 1;
+
+      reactionIds.forEach((reaction) => {
+        fields.push({
+          name: `Option ${ticker}`,
+          value: reaction,
+          inline: true,
+        });
+      });
+
+      return fields;
+    };
+
+    const embed = new MessageEmbed()
+      .setColor('#0099ff')
+      .setTitle(title)
+      .setURL(url)
+      .setDescription(description)
+      .addField({ name: 'Please react to vote:' })
+      .addFields(...options(reactionIds))
+      .setThumbnail(GrayBoy)
+      .setTimestamp();
+
+    return embed;
+  }
 
   /**
    * @dev interaction handler for bot slash commands
@@ -51,6 +85,7 @@ class DaoApp {
     const membersRoles = member.roles.cache.map((role) => role.id);
     const { commandName, options } = interaction;
 
+    // register command
     if (
       commandName === 'register' &&
       // snowflake id is for the test servers tester role
@@ -72,11 +107,6 @@ class DaoApp {
           ephemeral: true,
         });
       } else {
-        // console.log({
-        //   id: member.user.id,
-        //   address: options.getString('address'),
-        // });
-
         // TODO: Need to come up with another solution to this, as it is not ideal
         const registeredUserToAddress = await this.db.set(
           member.user.id,
@@ -99,8 +129,8 @@ class DaoApp {
           });
         }
       }
-    } else if (commandName === 'beep') {
-      await interaction.reply('Boop!');
+      // proposal command (admin)
+    } else if (commandName === 'proposal') {
     }
   }
 

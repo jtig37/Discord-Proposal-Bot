@@ -14,6 +14,17 @@ const commands = [
         .setRequired(true)
     ),
   new SlashCommandBuilder()
+    .setName('admin clear')
+    .setDescription('votes for a proposal')
+    .addSubcommand((subcommand) => {
+      subcommand
+        .setName('user')
+        .setDescription('clears registered user')
+        .addStringOption((option) =>
+          option.setName('userId').setRequired(true)
+        );
+    }),
+  new SlashCommandBuilder()
     .setName('proposal')
     .setDescription('creates a voting event'),
 ].map((command) => command.toJSON());

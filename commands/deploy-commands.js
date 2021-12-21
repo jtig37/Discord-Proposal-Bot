@@ -13,20 +13,35 @@ const commands = [
         .setDescription('Ethereum address starting in 0x...')
         .setRequired(true)
     ),
-  new SlashCommandBuilder()
-    .setName('admin clear')
-    .setDescription('votes for a proposal')
-    .addSubcommand((subcommand) => {
-      subcommand
-        .setName('user')
-        .setDescription('clears registered user')
-        .addStringOption((option) =>
-          option.setName('userId').setRequired(true)
-        );
-    }),
+  // new SlashCommandBuilder()
+  //   .setName('clear')
+  //   .setDescription('votes for a proposal')
+  //   .addStringOption((option) => {
+  //     option
+  //       .setName('user')
+  //       .setDescription('guild members userId')
+  //       .setRequired(true);
+  //   }),
   new SlashCommandBuilder()
     .setName('proposal')
-    .setDescription('creates a voting event'),
+    .setDescription('creates a voting event')
+    .addStringOption((option) =>
+      option.setName('title').setDescription('proposal title').setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName('description')
+        .setDescription('description of proposal (max 4000 char.)')
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName('reactions')
+        .setDescription(
+          'List reactions in the order that will be displayed, without spaces. (e.g. :smile::cry::angry::)'
+        )
+        .setRequired(true)
+    ),
 ].map((command) => command.toJSON());
 
 const rest = new REST({ version: '9' }).setToken(token);

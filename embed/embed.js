@@ -39,18 +39,6 @@ class Embed {
 
       return fields;
     };
-    // this.message = new MessageEmbed()
-    //   .setColor('#0099ff')
-    //   .setTitle(this.title)
-    //   .setURL(this.url)
-    //   .setDescription(this.description)
-    //   .addField({ name: 'Please react to vote:', value: '\u200B' })
-    //   .addFields(...this.fields())
-    //   .setThumbnail(GrayBoy)
-    //   .setTimestamp()
-    //   .setFooter(
-    //     'These votes are weighted according to the number of GrayBoys in voters accounts.'
-    //   );
     this.message = {
       color: 0x0099ff,
       title: this.title,

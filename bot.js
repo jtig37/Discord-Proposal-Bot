@@ -1,12 +1,7 @@
 const Keyv = require('keyv');
+const { MessageActionRow, MessageButton } = require('discord.js');
 const { database, permissionedRolesId } = require('./config.json');
-const {
-  MessageEmbed,
-  MessageActionRow,
-  MessageButton,
-  MessageAttachment,
-} = require('discord.js');
-const GrayBoy = new MessageAttachment('./assets/GrayBoy.jpg');
+const Embed = require('./embed/embed.js');
 
 class DaoApp {
   /**
@@ -37,45 +32,6 @@ class DaoApp {
     return membersRoles.some((role) => roles.includes(role));
   }
 
-  // TODO: Test UX and Admin UX if reaction emojis or buttons for best voting experience
-  /**
-   * @dev Creates embedded message for dao proposals
-   * @param {dao proposal title | string} title
-   * @param {dao proposal url | string} url (optional)
-   * @param {proposal description | string} description
-   * @param {reactions for voting options| string[]} reactionIds
-   * @param {TODO: admin image upload for individual proposals} image (optional)
-   * @returns {typeOf MessageEmbed}
-   */
-  createEmbed(title, url, description, reactionIds, image) {
-    const options = (reactionIds) => {
-      const fields = [];
-      let ticker = 1;
-
-      reactionIds.forEach((reaction) => {
-        fields.push({
-          name: `Option ${ticker}`,
-          value: reaction,
-          inline: true,
-        });
-      });
-
-      return fields;
-    };
-
-    const embed = new MessageEmbed()
-      .setColor('#0099ff')
-      .setTitle(title)
-      .setURL(url)
-      .setDescription(description)
-      .addField({ name: 'Please react to vote:' })
-      .addFields(...options(reactionIds))
-      .setThumbnail(GrayBoy)
-      .setTimestamp();
-
-    return embed;
-  }
-
   /**
    * @dev interaction handler for bot slash commands
    * @param {discord interaction object} interaction
@@ -83,7 +39,7 @@ class DaoApp {
   async interactionHandler(interaction) {
     const member = interaction.member;
     const membersRoles = member.roles.cache.map((role) => role.id);
-    const { commandName, options } = interaction;
+    const { commandName, options, channel } = interaction;
 
     // register command
     if (
@@ -103,7 +59,7 @@ class DaoApp {
 
       if (address) {
         return await interaction.reply({
-          content: `This address has already been registeed: ${address}`,
+          content: `This address has already been registered: ${address}`,
           ephemeral: true,
         });
       } else {
@@ -131,6 +87,17 @@ class DaoApp {
       }
       // proposal command (admin)
     } else if (commandName === 'proposal') {
+      const proposal = new Embed('test', 'https://google.com', 'test', [
+        ':smile:',
+        ':sunglasses:',
+      ]);
+      const embeddedProposal = proposal.message;
+      console.log({ embeddedProposal });
+      const message = await channel.send({
+        embeds: [embeddedProposal],
+      });
+      // const messageActionRow = new MessageActionRow(message);
+      await interaction.reply('Proposal sent!');
     }
   }
 

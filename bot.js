@@ -1,10 +1,13 @@
 const Keyv = require('keyv');
+const GrayBoyContract = require('./web3/web3.js');
 const {
   database,
+  clientId,
   permissionedRolesIds,
   adminRoleIds,
 } = require('./config.json');
 const Embed = require('./embed/embed.js');
+const { MessageEmbed } = require('discord.js');
 
 class DaoApp {
   /**
@@ -18,6 +21,7 @@ class DaoApp {
     this.token = token;
     this.client = client;
     this.channel = channel;
+    this.contract = new GrayBoyContract();
     this.db = new Keyv(`sqlite://${__dirname}/database/${database}.sqlite`);
 
     this.db.on('error', (err) => {
@@ -93,17 +97,12 @@ class DaoApp {
     ) {
       const reactions = options.getString('reactions');
       const reactionList = reactions.toString().split(',');
-      console.log({
-        // reactions: reactions.match(/([\s\S]+?:)/g),
-        reactions: reactions.toString().split(','),
-      });
       const proposal = new Embed(
         options.getString('title'),
         options.getString('description'),
         reactionList
       );
       const embeddedProposal = proposal.message;
-      console.log({ embeddedProposal });
       const message = await channel.send({
         embeds: [embeddedProposal],
       });
@@ -118,6 +117,49 @@ class DaoApp {
           user.id === member.user.id
         );
       };
+
+      message.awaitReactions({ filter, max: 1 }).then(async (collected) => {
+        const usersAddress = await this.db.get(member.user.id);
+        if (usersAddress === undefined) {
+          return interaction.reply({
+            content:
+              'You have not registered an address.\nTo register please use the `/register` command.',
+            ephemeral: true,
+          });
+        }
+
+        const reaction = collected.first();
+        const votersGrayBoyBalance = await this.contract
+          .balanceOf(usersAddress)
+          .catch((error) => {
+            if (error.code === 'INVALID_ARGUMENT') {
+              interaction.reply({
+                content:
+                  'Invalid address registered, contact an admin to register your address.',
+                ephemeral: true,
+              });
+            }
+          });
+
+        const cachedEmbed = message.embeds[0];
+        await cachedEmbed.updateVote(reaction.emoji.name, votersGrayBoyBalance);
+        const newEmbed = new MessageEmbed(reveivedEmbed);
+
+        channel.send({ embeds: [newEmbed] });
+
+        // if (!reactionList.includes(reaction.emoji.name)) {
+        //   message.reactions.cache
+        //     .get(reaction.emoji.name)
+        //     .remove()
+        //     .catch((error) =>
+        //       console.error('Failed to remove reaction: ', error)
+        //     );
+        // }
+
+        // if (reaction.emoji.name === '✅') {
+        //   message.channel.send('Proposal accepted!');
+        // }
+      });
 
       // const messageActionRow = new MessageActionRow(message);
       await interaction.reply('Proposal sent!');

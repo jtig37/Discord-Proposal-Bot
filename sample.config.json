@@ -1,8 +1,13 @@
 {
-    "token": "token_snowflake",
-    "clientId": "clientId_snowflake",
-    "guildId": "guild_snowflake",
-    "userId": "userId_snowflake",
-    "channelId": "channelId_snowflake",
-    "dbName": "dbName"
+    "token": "",
+    "clientId": "",
+    "guildId":"",
+    "permissionedRolesIds": [""],
+    "adminRoleIds": [""],
+    "channelId": "",
+    "database": "",
+    "proposalChannelId": "",
+    "politicianGrayBoyURL": "",
+    "infuraURL": "",
+    "contractAddress": ""
 }

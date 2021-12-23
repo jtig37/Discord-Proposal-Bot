@@ -1,6 +1,9 @@
 const Keyv = require('keyv');
-const { MessageActionRow, MessageButton } = require('discord.js');
-const { database, permissionedRolesId } = require('./config.json');
+const {
+  database,
+  permissionedRolesIds,
+  adminRoleIds,
+} = require('./config.json');
 const Embed = require('./embed/embed.js');
 
 class DaoApp {
@@ -28,7 +31,7 @@ class DaoApp {
    * @param {snowflake of discord permissioned | string[]} roles
    * @returns {boolean}
    */
-  async interactionRoleChecker(membersRoles, roles = permissionedRolesId) {
+  async interactionRoleChecker(membersRoles, roles = permissionedRolesIds) {
     return membersRoles.some((role) => roles.includes(role));
   }
 
@@ -48,63 +51,78 @@ class DaoApp {
       (await this.interactionRoleChecker(membersRoles))
     ) {
       // Checks if address has already been registered
-      const user = await this.db.get(options.getString('address'));
-
-      if (user === undefined) {
-        console.log({ user });
-        return interaction.reply('This address has already been registered');
-      }
-
+      const submittedAddress = options.getString('address');
       const address = await this.db.get(member.user.id);
+      const user = await this.db.get(submittedAddress);
 
-      if (address) {
-        return await interaction.reply({
-          content: `This address has already been registered: ${address}`,
-          ephemeral: true,
-        });
-      } else {
-        // TODO: Need to come up with another solution to this, as it is not ideal
+      if (user === undefined && address === undefined) {
         const registeredUserToAddress = await this.db.set(
           member.user.id,
-          options.getString('address')
+          submittedAddress
         );
         const registerAddressToUser = await this.db.set(
-          options.getString('address'),
+          submittedAddress,
           member.user.id
         );
-
-        if (registeredUserToAddress && registerAddressToUser) {
-          return await interaction.reply({
-            content: "You've been registered!",
-            ephemeral: true,
-          });
-        } else {
-          return await interaction.reply({
-            content: 'Something went wrong!',
-            ephemeral: true,
-          });
+        registerAddressToUser && registeredUserToAddress
+          ? await interaction.reply({
+              content: `You have sucessfully registered: ${submittedAddress}`,
+              ephemeral: true,
+            })
+          : await interaction.reply({
+              content: 'Something went wrong, please try again.',
+              ephemeral: true,
+            });
+        {
         }
+      } else if (address) {
+        await interaction.reply({
+          content: `You have already registered this address: ${address} \nIf you would like to change your address, please contact an admin.`,
+          ephemeral: true,
+        });
+      } else if (user !== member.user.id && user !== undefined) {
+        return await interaction.reply({
+          content: `This address has already been registered to another user. \nIf there is an issue, please contact an admin.`,
+          ephemeral: true,
+        });
       }
       // proposal command (admin)
-    } else if (commandName === 'proposal') {
+    } else if (
+      commandName === 'proposal' &&
+      this.interactionRoleChecker(membersRoles, adminRoleIds)
+    ) {
+      const reactions = options.getString('reactions');
+      const reactionList = reactions.toString().split(',');
       console.log({
-        reactions: options.getString('reactions').match(/([\s\S]+?:)/g),
+        // reactions: reactions.match(/([\s\S]+?:)/g),
+        reactions: reactions.toString().split(','),
       });
       const proposal = new Embed(
         options.getString('title'),
         options.getString('description'),
-        options.getString('reactions').match(/([\s\S]+?:)/)
+        reactionList
       );
       const embeddedProposal = proposal.message;
       console.log({ embeddedProposal });
       const message = await channel.send({
         embeds: [embeddedProposal],
       });
+
+      reactionList.forEach((reaction) => {
+        message.react(reaction);
+      });
+
+      const filter = (reaction, user) => {
+        return (
+          reactionList.includes(reaction.emoji.name) &&
+          user.id === member.user.id
+        );
+      };
+
       // const messageActionRow = new MessageActionRow(message);
       await interaction.reply('Proposal sent!');
     }
   }
-
   async start() {
     try {
       await this.client.once('ready', () => {
@@ -115,15 +133,6 @@ class DaoApp {
         if (!interaction.isCommand()) return;
 
         await this.interactionHandler(interaction);
-        // if (
-        //   commandName === 'register' &&
-        //   // snowflake id is for the test servers tester role
-        //   member.roles.cache.has('921594568581984256')
-        // ) {
-        //   await interaction.reply('please enter your ethereum address');
-        // } else if (commandName === 'beep') {
-        //   await interaction.reply('Boop!');
-        // }
       });
 
       // starts the application client

@@ -48,9 +48,9 @@ class Embed {
       title: this.title,
       url: this.url,
       author: {
-        name: 'Some name',
+        name: 'GrayBoys High Council',
         icon_url: politicianGrayBoyURL,
-        url: 'https://discord.js.org',
+        url: this.url,
       },
       description: this.description,
       thumbnail: {
@@ -58,7 +58,7 @@ class Embed {
       },
       fields: this.fields(),
       image: {
-        url: politicianGrayBoyURL,
+        // url: politicianGrayBoyURL,
       },
       timestamp: new Date(),
       footer: {

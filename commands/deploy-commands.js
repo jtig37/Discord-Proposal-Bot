@@ -36,12 +36,12 @@ const commands = [
     )
     .addStringOption((option) =>
       option
-        .setName('reactions')
+        .setName('option1')
         .setDescription(
           'List reactions in the order that will be displayed, without spaces. (e.g. :smile::cry::angry::)'
         )
-        .setRequired(true)
-    ),
+        .setRequired(false)
+    ).
 ].map((command) => command.toJSON());
 
 const rest = new REST({ version: '9' }).setToken(token);

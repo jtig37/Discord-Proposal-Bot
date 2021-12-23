@@ -8,6 +8,7 @@ const client = new Client({
     Intents.FLAGS.GUILD_MESSAGES,
     Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
   ],
+  partials: ['MESSAGE', 'CHANNEL', 'REACTION'],
 });
 
 const Dao = new DaoApp(token, client, channelId, permissionedRolesId);

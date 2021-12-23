@@ -87,10 +87,14 @@ class DaoApp {
       }
       // proposal command (admin)
     } else if (commandName === 'proposal') {
-      const proposal = new Embed('test', 'https://google.com', 'test', [
-        ':smile:',
-        ':sunglasses:',
-      ]);
+      console.log({
+        reactions: options.getString('reactions').match(/([\s\S]+?:)/g),
+      });
+      const proposal = new Embed(
+        options.getString('title'),
+        options.getString('description'),
+        options.getString('reactions').match(/([\s\S]+?:)/)
+      );
       const embeddedProposal = proposal.message;
       console.log({ embeddedProposal });
       const message = await channel.send({

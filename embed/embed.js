@@ -5,6 +5,7 @@ const {
   MessageAttachment,
 } = require('discord.js');
 const GrayBoy = new MessageAttachment('./assets/GrayBoy.jpg');
+const { politicianGrayBoyURL } = require('../config.json');
 
 // TODO: Test UX and Admin UX if reaction emojis or buttons for best voting experience
 /**
@@ -12,17 +13,20 @@ const GrayBoy = new MessageAttachment('./assets/GrayBoy.jpg');
  * @param {dao proposal title | string} title
  * @param {dao proposal url | string} url (optional)
  * @param {proposal description | string} description
- * @param {reactions for voting options| string[] i.e. :smile:} reactionNames
+ * @param {reactions for voting options| string[] i.e. :smile:} reactions
  * @param {object with key value pair being reaction name and user weighted votes respectively | i.e. {":smile:": 2}} updateVotes
  * @param {TODO: admin image upload for individual proposals} image (optional)
  * @returns {typeOf MessageEmbed}
  */
 class Embed {
-  constructor(title, url, description, reactionNames) {
+  constructor(title, description, reactions, url) {
     this.title = title;
-    this.url = url;
+    this.url = url ? url : null;
     this.description = description;
-    this.votes = reactionNames.reduce(
+
+    // creates and array of reactions then creates and object of reactions with {[reaction]: [weighted votes]}
+    // (weighted votes default is 0)
+    this.votes = reactions.reduce(
       (prev, name) => ({ ...prev, [name]: '0' }),
       {}
     );
@@ -45,16 +49,16 @@ class Embed {
       url: this.url,
       author: {
         name: 'Some name',
-        icon_url: 'https://i.imgur.com/AfFp7pu.png',
+        icon_url: politicianGrayBoyURL,
         url: 'https://discord.js.org',
       },
       description: this.description,
       thumbnail: {
-        url: 'https://i.imgur.com/AfFp7pu.png',
+        url: politicianGrayBoyURL,
       },
       fields: this.fields(),
       image: {
-        url: 'https://i.imgur.com/AfFp7pu.png',
+        url: politicianGrayBoyURL,
       },
       timestamp: new Date(),
       footer: {

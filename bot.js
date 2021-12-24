@@ -116,8 +116,10 @@ class DaoApp {
         );
       };
 
-      message.awaitReactions({ filter, max: 1 }).then(async (collected) => {
-        const usersAddress = await this.db.get(member.user.id);
+      const collector = message.createReactionCollector({ filter });
+
+      collector.on('collect', async (reaction, user) => {
+        const usersAddress = await this.db.get(user.id);
         if (usersAddress === undefined) {
           interaction.reply({
             content:
@@ -126,28 +128,22 @@ class DaoApp {
           });
         }
 
-        const reaction = collected.first();
         const votersGrayBoyBalance = await this.contract.balanceOf(
           usersAddress
         );
-        // .catch((error) => {
-        //   if (error.code === 'INVALID_ARGUMENT') {
-        //     interaction.reply({
-        //       content:
-        //         'Invalid address registered, contact an admin to register your address.',
-        //       ephemeral: true,
-        //     });
-        //   }
-        // });
 
         const cachedEmbed = message.embeds[0];
-        await cachedEmbed.updateVote(reaction.emoji.name, votersGrayBoyBalance);
-        const newEmbed = new MessageEmbed(cachedEmbed);
+        const updatedFields = cachedEmbed.fields.map((x) =>
+          x.name === `Option ${reaction.emoji.name}:`
+            ? { ...x, value: (x.value += votersGrayBoyBalance) }
+            : x
+        );
+        const newEmbed = new MessageEmbed(cachedEmbed).setFields(updatedFields);
+        console.log({ cachedEmbed, updatedFields, newEmbed });
 
-        channel.send({ embeds: [newEmbed] });
+        message.edit({ embeds: [newEmbed] });
       });
 
-      // const messageActionRow = new MessageActionRow(message);
       await interaction.reply('Proposal sent!');
     } else if (
       commandName === 'unregister' &&

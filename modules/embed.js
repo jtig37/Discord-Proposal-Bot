@@ -66,12 +66,11 @@ class Embed {
       },
     };
   }
-
-  updateVotes = (reaction, weightedVote) => {
-    this.votes[reaction] += weightedVote;
-    console.log({ votes: this.votes });
-    return this.message;
-  };
+  // updateVotes = (reaction, weightedVote) => {
+  //   this.votes[reaction] += weightedVote;
+  //   console.log({ votes: this.votes });
+  //   return this.message;
+  // };
 }
 
 module.exports = Embed;

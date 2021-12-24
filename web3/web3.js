@@ -11,7 +11,6 @@ class GrayBoyContract {
 
   async balanceOf(address) {
     const balance = await this.contract.methods.balanceOf(address).call();
-    console.log({ balance });
     return balance;
   }
 }

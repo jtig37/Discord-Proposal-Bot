@@ -13,15 +13,6 @@ const commands = [
         .setDescription('Ethereum address starting in 0x...')
         .setRequired(true)
     ),
-  // new SlashCommandBuilder()
-  //   .setName('clear')
-  //   .setDescription('votes for a proposal')
-  //   .addStringOption((option) => {
-  //     option
-  //       .setName('user')
-  //       .setDescription('guild members userId')
-  //       .setRequired(true);
-  //   }),
   new SlashCommandBuilder()
     .setName('proposal')
     .setDescription('creates a voting event')
@@ -40,6 +31,39 @@ const commands = [
         .setDescription(
           'List reactions in the order that will be displayed, seperated by commas. (e.g. :one:,:two:,:three:)'
         )
+        .setRequired(true)
+    ),
+  new SlashCommandBuilder()
+    .setName('unregister')
+    .setDescription(
+      'unregisters user or address (either option will properly remove from db)'
+    )
+    .addStringOption((option) =>
+      option
+        // There is a error with zod lib here where regex won't accept "userId" as the name
+        .setName('user')
+        .setDescription('input users id to unregister')
+        .setRequired(false)
+    )
+    .addStringOption((option) =>
+      option
+        .setName('address')
+        .setDescription('input address to unregister')
+        .setRequired(false)
+    ),
+  new SlashCommandBuilder()
+    .setName('get-address-by-user')
+    .setDescription('gets address by user id')
+    .addStringOption((option) =>
+      option.setName('user').setDescription('input users id').setRequired(true)
+    ),
+  new SlashCommandBuilder()
+    .setName('get-user-by-address')
+    .setDescription('gets user id by address')
+    .addStringOption((option) =>
+      option
+        .setName('address')
+        .setDescription('input address')
         .setRequired(true)
     ),
 ].map((command) => command.toJSON());

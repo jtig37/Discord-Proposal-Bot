@@ -7,7 +7,6 @@ class GrayBoyContract {
   constructor() {
     Contract.setProvider(infuraURL);
     this.contract = new Contract(abi, contractAddress);
-    console.log({ contract: this.contract.methods });
   }
 
   async balanceOf(address) {

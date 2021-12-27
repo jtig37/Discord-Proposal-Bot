@@ -111,35 +111,38 @@ class DaoApp {
       });
 
       const filter = (reaction, user) => {
-        return (
-          reactionList.includes(reaction.emoji.name) && clientId !== user.id
-        );
+        return reactionList.includes(reaction.emoji.name) && user;
       };
 
       const collector = message.createReactionCollector({ filter });
 
       collector.on('collect', async (reaction, user) => {
-        const usersAddress = await this.db.get(user.id);
-        if (usersAddress === undefined) {
-          interaction.reply({
-            content:
-              'You have not registered an address.\nTo register please use the `/register` command.',
-            ephemeral: true,
-          });
-        }
+        if (user.id === clientId) return;
 
+        const userReactions = message.reactions.cache.filter((reaction) =>
+          reaction.users.cache.has(user.id)
+        );
+        console.log({ userReactions });
+        // if (userReactions.count > 1) return;
+
+        const usersAddress = await this.db.get(user.id);
         const votersGrayBoyBalance = await this.contract.balanceOf(
           usersAddress
         );
 
         const cachedEmbed = message.embeds[0];
+
         const updatedFields = cachedEmbed.fields.map((x) =>
           x.name === `Option ${reaction.emoji.name}:`
-            ? { ...x, value: (x.value += votersGrayBoyBalance) }
+            ? {
+                ...x,
+                value: (
+                  parseInt(x.value) + parseInt(votersGrayBoyBalance)
+                ).toString(),
+              }
             : x
         );
         const newEmbed = new MessageEmbed(cachedEmbed).setFields(updatedFields);
-        console.log({ cachedEmbed, updatedFields, newEmbed });
 
         message.edit({ embeds: [newEmbed] });
       });
@@ -184,7 +187,6 @@ class DaoApp {
     ) {
       const submittedUserId = options.getString('user');
       const submittedAddress = options.getString('address');
-      console.log({ submittedUserId, submittedAddress });
 
       if (submittedUserId !== null) {
         const address = await this.db.get(submittedUserId);

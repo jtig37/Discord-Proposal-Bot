@@ -66,11 +66,36 @@ class Embed {
       },
     };
   }
-  // updateVotes = (reaction, weightedVote) => {
-  //   this.votes[reaction] += weightedVote;
-  //   console.log({ votes: this.votes });
-  //   return this.message;
-  // };
 }
 
-module.exports = Embed;
+/**
+ *
+ * @param {cached embed from message.embeds[0]} cachedEmbed
+ * @param {reaction emoji name} reactionName
+ * @param {returned balance from contract} votersBalance
+ * @param {'add' or 'remove' for type of vote update} updateType
+ * @returns {typeOf MessageEmbed}
+ */
+function updateEmbedVotes(
+  cachedEmbed,
+  reactionName,
+  votersBalance,
+  updateType = 'add' | 'remove'
+) {
+  const updatedFields = cachedEmbed.fields.map((x) =>
+    x.name === `Option ${reactionName}:`
+      ? {
+          ...x,
+          value: (updateType === 'add'
+            ? parseInt(x.value) + parseInt(votersBalance)
+            : parseInt(x.value) - parseInt(votersBalance)
+          ).toString(),
+        }
+      : x
+  );
+  const newEmbed = new MessageEmbed(cachedEmbed).setFields(updatedFields);
+
+  return newEmbed;
+}
+
+module.exports = { Embed, updateEmbedVotes };

@@ -6,8 +6,8 @@ const {
   permissionedRolesIds,
   adminRoleIds,
 } = require('./config.json');
-const Embed = require('./modules/embed.js');
-const { MessageEmbed } = require('discord.js');
+const { Embed, updateEmbedVotes } = require('./modules/embed.js');
+const { MessageEmbed, Collection } = require('discord.js');
 
 class DaoApp {
   /**
@@ -110,6 +110,12 @@ class DaoApp {
         message.react(reaction);
       });
 
+      const getUsersReactions = (userId) => {
+        return message.reactions.cache.filter((reaction) =>
+          reaction.users.cache.has(userId)
+        );
+      };
+
       const filter = (reaction, user) => {
         return reactionList.includes(reaction.emoji.name) && user;
       };
@@ -118,33 +124,85 @@ class DaoApp {
 
       collector.on('collect', async (reaction, user) => {
         if (user.id === clientId) return;
-
-        const userReactions = message.reactions.cache.filter((reaction) =>
-          reaction.users.cache.has(user.id)
-        );
-        console.log({ userReactions });
-        // if (userReactions.count > 1) return;
-
+        let usersReacts = getUsersReactions(user.id);
         const usersAddress = await this.db.get(user.id);
-        const votersGrayBoyBalance = await this.contract.balanceOf(
-          usersAddress
+        if (usersAddress === undefined) {
+          reaction.users.remove(user.id);
+          return;
+        }
+        const usersBalance = await this.contract.balanceOf(usersAddress);
+
+        const usersLastReaction = await this.db.get(
+          `${user.id}_lastReactionOnMessage_${message.id}`
         );
+        console.log({ usersLastReaction });
 
-        const cachedEmbed = message.embeds[0];
+        // first time user reacts to message
+        if (usersLastReaction === undefined) {
+          await this.db.set(`${user.id}_lastReactionOnMessage_${message.id}`, {
+            reaction: reaction.emoji.name,
+          });
 
-        const updatedFields = cachedEmbed.fields.map((x) =>
-          x.name === `Option ${reaction.emoji.name}:`
-            ? {
-                ...x,
-                value: (
-                  parseInt(x.value) + parseInt(votersGrayBoyBalance)
-                ).toString(),
-              }
-            : x
-        );
-        const newEmbed = new MessageEmbed(cachedEmbed).setFields(updatedFields);
+          const newEmbed = updateEmbedVotes(
+            message.embeds[0],
+            reaction.emoji.name,
+            usersBalance,
+            'add'
+          );
 
-        message.edit({ embeds: [newEmbed] });
+          message.edit({ embeds: [newEmbed] });
+          // user has already reacted to message, but not to the same reaction
+          // updates the embed with the current reaction
+        } else if (usersLastReaction.reaction !== reaction.emoji.name) {
+          console.log({ usersReacts });
+
+          usersReacts.each((react, key, collection) => {
+            if (usersLastReaction.reaction === key) {
+              react.users.remove(user.id);
+
+              const cachedEmbed = updateEmbedVotes(
+                message.embeds[0],
+                key,
+                usersBalance,
+                'remove'
+              );
+              console.log({ cachedEmbed: cachedEmbed.fields });
+
+              const newEmbed = updateEmbedVotes(
+                cachedEmbed,
+                reaction.emoji.name,
+                usersBalance,
+                'add'
+              );
+
+              message.edit({ embeds: [newEmbed] });
+            } else if (
+              usersLastReaction.reaction !== key &&
+              usersReacts.size === 1
+            ) {
+              console.log({ 'made it here': true });
+              const cachedEmbed = updateEmbedVotes(
+                message.embeds[0],
+                usersLastReaction.reaction,
+                usersBalance,
+                'remove'
+              );
+
+              const newEmbed = updateEmbedVotes(
+                cachedEmbed,
+                key,
+                usersBalance,
+                'add'
+              );
+
+              message.edit({ embeds: [newEmbed] });
+            }
+          });
+
+          await this.db.set(`${user.id}_lastReactionOnMessage_${message.id}`, {
+            reaction: reaction.emoji.name,
+          });
+        }
       });
 
       await interaction.reply('Proposal sent!');
@@ -152,27 +210,18 @@ class DaoApp {
       commandName === 'unregister' &&
       this.interactionRoleChecker(membersRoles, adminRoleIds)
     ) {
-      const submittedAddress = options.getString('address');
-      const submittedUserId = options.getString('user');
+      const usersInfo = options.getString('address')
+        ? options.getString('address')
+        : options.getString('user');
 
       try {
-        if (submittedUserId) {
-          const address = await this.db.get(submittedUserId);
-          await this.db.delete(submittedUserId);
-          await this.db.delete(address);
-          await interaction.reply({
-            content: `${submittedUserId} has been unregistered.`,
-            ephemeral: true,
-          });
-        } else if (submittedAddress) {
-          const userId = await this.db.get(submittedAddress);
-          await this.db.delete(submittedAddress);
-          await this.db.delete(userId);
-          await interaction.reply({
-            content: `${submittedAddress} has been unregistered.`,
-            ephemeral: true,
-          });
-        }
+        const value = await this.db.get(usersInfo);
+        await this.db.delete(usersInfo);
+        await this.db.delete(value);
+        await interaction.reply({
+          content: `${usersInfo} has been unregistered.`,
+          ephemeral: true,
+        });
       } catch (error) {
         console.error(error);
         await interaction.reply({

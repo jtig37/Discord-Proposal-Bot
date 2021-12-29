@@ -1,11 +1,5 @@
-const {
-  MessageEmbed,
-  MessageActionRow,
-  MessageButton,
-  MessageAttachment,
-} = require('discord.js');
-const GrayBoy = new MessageAttachment('./assets/GrayBoy.jpg');
-const { politicianGrayBoyURL } = require('../config.json');
+const { MessageEmbed } = require('discord.js');
+const { imageURL } = require('../config.json');
 
 // TODO: Test UX and Admin UX if reaction emojis or buttons for best voting experience
 /**
@@ -19,9 +13,10 @@ const { politicianGrayBoyURL } = require('../config.json');
  * @returns {typeOf MessageEmbed}
  */
 class Embed {
-  constructor(title, description, reactions, url) {
+  constructor(title, description, reactions, authorsName, url) {
     this.title = title;
     this.url = url ? url : null;
+    this.authorsName = authorsName;
     this.description = description;
 
     // creates and array of reactions then creates and object of reactions with {[reaction]: [weighted votes]}
@@ -48,13 +43,13 @@ class Embed {
       title: this.title,
       url: this.url,
       author: {
-        name: 'GrayBoys High Council',
-        icon_url: politicianGrayBoyURL,
+        name: this.authorsName,
+        icon_url: imageURL,
         url: this.url,
       },
       description: this.description,
       thumbnail: {
-        url: politicianGrayBoyURL,
+        url: imageURL,
       },
       fields: this.fields(),
       image: {

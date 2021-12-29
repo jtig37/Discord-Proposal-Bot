@@ -7,7 +7,6 @@ const {
   adminRoleIds,
 } = require('./config.json');
 const { Embed, updateEmbedVotes } = require('./modules/embed.js');
-const { MessageEmbed, Collection } = require('discord.js');
 
 class DaoApp {
   /**
@@ -99,7 +98,8 @@ class DaoApp {
       const proposal = new Embed(
         options.getString('title'),
         options.getString('description'),
-        reactionList
+        reactionList,
+        interaction.member.displayName
       );
       const embeddedProposal = proposal.message;
       const message = await channel.send({

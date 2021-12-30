@@ -1,21 +1,14 @@
 const Keyv = require('keyv');
 const GrayBoyContract = require('./web3/web3.js');
-const {
-  database,
-  clientId,
-  permissionedRoleIds,
-  adminRoleIds,
-  guildId,
-} = require('./config.json');
+const { database, clientId } = require('./config.json');
 const { Embed, updateEmbedVotes } = require('./modules/embed.js');
 const updateCommandPermissions = require('./commands/update-command-permissions.js');
 
 class DaoApp {
   /**
-   * @dev constructor
-   * @param {Discord bot application token: string} token
-   * @param {discord client api; Client Object} client
-   * @param {snowflakes of channels; string[]} channel
+   * @param {string} token - Discord application token
+   * @param {ClientObject} client - Discord client
+   * @param {string} channel - channel id
    */
   constructor(token, client, channel) {
     this.token = token;
@@ -31,11 +24,10 @@ class DaoApp {
 
   /**
    * @dev interaction handler for bot slash commands
-   * @param {discord interaction object} interaction
+   * @param {InteractionObject} interaction
    */
   async interactionHandler(interaction) {
     const member = interaction.member;
-    const membersRoles = member.roles.cache.map((role) => role.id);
     const { commandName, options, channel } = interaction;
 
     if (commandName === 'register') {
@@ -89,6 +81,8 @@ class DaoApp {
         embeds: [embeddedProposal],
       });
 
+      console.log({ message });
+      // Adds the reactions given from the command to the message
       reactionList.forEach((reaction) => {
         message.react(reaction);
       });
@@ -99,26 +93,37 @@ class DaoApp {
         );
       };
 
+      // Filter to only listen for voting options
       const filter = (reaction, user) => {
-        return reactionList.includes(reaction.emoji.name) && user;
+        return (
+          reactionList.includes(reaction.emoji.name) &&
+          message.reactions.cache.filter((reaction) =>
+            reaction.users.cache.has(user.id)
+          ).size <= 1
+        );
       };
-
       const collector = message.createReactionCollector({ filter });
-
-      collector.on('collect', async (reaction, user) => {
+      // Events for reactions to message
+      collector.on('collect', async (reaction, user, collection) => {
+        const usersAddress = await this.db.get(user.id);
         if (user.id === clientId) return;
         let usersReacts = getUsersReactions(user.id);
-        const usersAddress = await this.db.get(user.id);
-        if (usersAddress === undefined) {
+        const balance = await this.contract
+          .balanceOf(usersAddress)
+          .catch((error) =>
+            console.error(`User ${user.id} balance error: ${error}`)
+          );
+        const usersBalance = balance ? balance : 0;
+
+        // If user does not have a registered address, they cannot vote
+        if (usersAddress === undefined || usersBalance === 0) {
           reaction.users.remove(user.id);
           return;
         }
-        const usersBalance = await this.contract.balanceOf(usersAddress);
 
         const usersLastReaction = await this.db.get(
           `${user.id}_lastReactionOnMessage_${message.id}`
         );
-        console.log({ usersLastReaction });
 
         // first time user reacts to message
         if (usersLastReaction === undefined) {
@@ -137,8 +142,6 @@ class DaoApp {
           // user has already reacted to message, but not to the same reaction
           // updates the embed with the current reaction
         } else if (usersLastReaction.reaction !== reaction.emoji.name) {
-          console.log({ usersReacts });
-
           usersReacts.each((react, key, collection) => {
             if (usersLastReaction.reaction === key) {
               react.users.remove(user.id);
@@ -160,10 +163,10 @@ class DaoApp {
 
               message.edit({ embeds: [newEmbed] });
             } else if (
+              // If user has voted => unvoted => voted on a different reaction
               usersLastReaction.reaction !== key &&
               usersReacts.size === 1
             ) {
-              console.log({ 'made it here': true });
               const cachedEmbed = updateEmbedVotes(
                 message.embeds[0],
                 usersLastReaction.reaction,
@@ -204,15 +207,8 @@ class DaoApp {
         });
       } catch (error) {
         console.error(error);
-        await interaction.reply({
-          content: 'Something went wrong, please try again.',
-          ephemeral: true,
-        });
       }
-    } else if (
-      (commandName === 'get-address') | (commandName === 'get-user') &&
-      this.interactionRoleChecker(membersRoles, adminRoleIds)
-    ) {
+    } else if ((commandName === 'get-address') | (commandName === 'get-user')) {
       const submittedUserId = options.getString('user');
       const submittedAddress = options.getString('address');
 

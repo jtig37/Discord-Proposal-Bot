@@ -2,7 +2,7 @@
     "token": "",
     "clientId": "",
     "guildId":"",
-    "permissionedRolesIds": [""],
+    "permissionedRoleIds": [""],
     "adminRoleIds": [""],
     "channelId": "",
     "database": "",

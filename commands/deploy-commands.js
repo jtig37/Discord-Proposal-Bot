@@ -7,6 +7,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName('register')
     .setDescription('registers ethereum address')
+    .setDefaultPermission(false)
     .addStringOption((option) =>
       option
         .setName('address')
@@ -16,6 +17,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName('proposal')
     .setDescription('creates a voting event')
+    .setDefaultPermission(false)
     .addStringOption((option) =>
       option.setName('title').setDescription('proposal title').setRequired(true)
     )
@@ -38,6 +40,7 @@ const commands = [
     .setDescription(
       'unregisters user or address (either option will properly remove from db)'
     )
+    .setDefaultPermission(false)
     .addStringOption((option) =>
       option
         // There is a error with zod lib here where regex won't accept "userId" as the name
@@ -52,14 +55,16 @@ const commands = [
         .setRequired(false)
     ),
   new SlashCommandBuilder()
-    .setName('get-address-by-user')
+    .setName('get-address')
     .setDescription('gets address by user id')
+    .setDefaultPermission(false)
     .addStringOption((option) =>
       option.setName('user').setDescription('input users id').setRequired(true)
     ),
   new SlashCommandBuilder()
-    .setName('get-user-by-address')
+    .setName('get-user')
     .setDescription('gets user id by address')
+    .setDefaultPermission(false)
     .addStringOption((option) =>
       option
         .setName('address')

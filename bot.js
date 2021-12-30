@@ -3,10 +3,12 @@ const GrayBoyContract = require('./web3/web3.js');
 const {
   database,
   clientId,
-  permissionedRolesIds,
+  permissionedRoleIds,
   adminRoleIds,
+  guildId,
 } = require('./config.json');
 const { Embed, updateEmbedVotes } = require('./modules/embed.js');
+const updateCommandPermissions = require('./commands/update-command-permissions.js');
 
 class DaoApp {
   /**
@@ -14,7 +16,6 @@ class DaoApp {
    * @param {Discord bot application token: string} token
    * @param {discord client api; Client Object} client
    * @param {snowflakes of channels; string[]} channel
-   * @param {snowflakes of permissioned roles for bot interactions; string[]} permissionedRoles
    */
   constructor(token, client, channel) {
     this.token = token;
@@ -29,16 +30,6 @@ class DaoApp {
   }
 
   /**
-   * @dev Requires discord user to have the permissioned role, else fails bot interaction
-   * @param {discord members roles for guild | string[]} membersRoles
-   * @param {snowflake of discord permissioned | string[]} roles
-   * @returns {boolean}
-   */
-  interactionRoleChecker(membersRoles, roles = permissionedRolesIds) {
-    return membersRoles.some((role) => roles.includes(role));
-  }
-
-  /**
    * @dev interaction handler for bot slash commands
    * @param {discord interaction object} interaction
    */
@@ -47,12 +38,7 @@ class DaoApp {
     const membersRoles = member.roles.cache.map((role) => role.id);
     const { commandName, options, channel } = interaction;
 
-    // register command
-    if (
-      commandName === 'register' &&
-      // snowflake id is for the test servers tester role
-      this.interactionRoleChecker(membersRoles)
-    ) {
+    if (commandName === 'register') {
       // Checks if address has already been registered
       const submittedAddress = options.getString('address');
       const address = await this.db.get(member.user.id);
@@ -89,10 +75,7 @@ class DaoApp {
           ephemeral: true,
         });
       }
-    } else if (
-      commandName === 'proposal' &&
-      this.interactionRoleChecker(membersRoles, adminRoleIds)
-    ) {
+    } else if (commandName === 'proposal') {
       const reactions = options.getString('reactions');
       const reactionList = reactions.toString().split(',');
       const proposal = new Embed(
@@ -206,10 +189,7 @@ class DaoApp {
       });
 
       await interaction.reply('Proposal sent!');
-    } else if (
-      commandName === 'unregister' &&
-      this.interactionRoleChecker(membersRoles, adminRoleIds)
-    ) {
+    } else if (commandName === 'unregister') {
       const usersInfo = options.getString('address')
         ? options.getString('address')
         : options.getString('user');
@@ -230,8 +210,7 @@ class DaoApp {
         });
       }
     } else if (
-      (commandName === 'get-address-by-user') |
-        (commandName === 'get-user-by-address') &&
+      (commandName === 'get-address') | (commandName === 'get-user') &&
       this.interactionRoleChecker(membersRoles, adminRoleIds)
     ) {
       const submittedUserId = options.getString('user');
@@ -256,12 +235,19 @@ class DaoApp {
           ephemeral: true,
         });
       }
+    } else {
+      return await interaction.reply({
+        content:
+          'Sorry, something went wrong, or you do not have access to these commands.',
+        ephemeral: true,
+      });
     }
   }
 
   async start() {
     try {
-      await this.client.once('ready', () => {
+      await this.client.once('ready', async () => {
+        await updateCommandPermissions(this.client);
         console.log('Ready!');
       });
 

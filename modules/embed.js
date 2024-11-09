@@ -1,26 +1,25 @@
 const { MessageEmbed } = require('discord.js');
 const { imageURL } = require('../config.json');
 
-// TODO: Test UX and Admin UX if reaction emojis or buttons for best voting experience
+// TODO: Test UX and Admin UX with reaction emojis or buttons for best voting experience
 /**
- * @dev Creates embedded message for dao proposals
- * @param {dao proposal title | string} title
- * @param {dao proposal url | string} url (optional)
- * @param {proposal description | string} description
- * @param {reactions for voting options| string[] i.e. :smile:} reactions
- * @param {object with key value pair being reaction name and user weighted votes respectively | i.e. {":smile:": 2}} updateVotes
- * @param {TODO: admin image upload for individual proposals} image (optional)
- * @returns {typeOf MessageEmbed}
+ * @dev Creates embedded message for Solana DAO proposals
+ * @param {string} title - Title of the DAO proposal
+ * @param {string} url - URL for the proposal (optional)
+ * @param {string} description - Proposal description
+ * @param {string[]} reactions - Reactions for voting options (e.g., :smile:)
+ * @param {object} updateVotes - Object with reaction name as key and user weighted votes as value (e.g., {":smile:": 2})
+ * @param {string} image - Image for the proposal (optional)
+ * @returns {MessageEmbed}
  */
 class Embed {
   constructor(title, description, reactions, authorsName, url) {
     this.title = title;
-    this.url = url ? url : null;
+    this.url = url || null;
     this.authorsName = authorsName;
     this.description = description;
 
-    // creates and array of reactions then creates and object of reactions with {[reaction]: [weighted votes]}
-    // (weighted votes default is 0)
+    // Initialize votes for each reaction option with a default of 0
     this.votes = reactions.reduce(
       (prev, name) => ({ ...prev, [name]: '0' }),
       {}
@@ -53,29 +52,30 @@ class Embed {
       },
       fields: this.fields(),
       image: {
-        // url: politicianGrayBoyURL,
+        // Placeholder for potential future image customization
+        // url: customImageURL,
       },
       timestamp: new Date(),
       footer: {
-        text: 'These votes are weighted according to the number of GrayBoys in voters accounts.',
+        text: 'These votes are weighted according to the user\'s holdings in the Solana-based assets.',
       },
     };
   }
 }
 
 /**
- *
- * @param {cached embed from message.embeds[0]} cachedEmbed
- * @param {reaction emoji name} reactionName
- * @param {returned balance from contract} votersBalance
- * @param {'add' or 'remove' for type of vote update} updateType
- * @returns {typeOf MessageEmbed}
+ * Updates the embed votes by adding or removing votes based on the reaction and balance
+ * @param {MessageEmbed} cachedEmbed - Cached embed from message.embeds[0]
+ * @param {string} reactionName - Reaction emoji name
+ * @param {number} votersBalance - Balance from Solana wallet (e.g., token balance or NFT count)
+ * @param {'add'|'remove'} updateType - Type of vote update (either 'add' or 'remove')
+ * @returns {MessageEmbed}
  */
 function updateEmbedVotes(
   cachedEmbed,
   reactionName,
   votersBalance,
-  updateType = 'add' | 'remove'
+  updateType = 'add'
 ) {
   const updatedFields = cachedEmbed.fields.map((x) =>
     x.name === `Option ${reactionName}:`
